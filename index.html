@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4EFE6">
+<meta name="format-detection" content="telephone=no">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="styles.css">
+<title>바탕 대여함</title>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+var ORG = store.get('org') || '바탕'; // 학생회 이름은 서버([설정] 시트)에서 받아온다
+var S = {
+  cat: null, tab: '전공서적', q: '', picked: [],
+  me: store.get('me') || { studentId: '', name: '', phone: '', email: '' },
+  mine: [], sel: [], result: null
+};
+var stack = [];
+
+function go(view, push) {
+  if (push !== false) stack.push(view);
+  var app = $('#app');
+  app.innerHTML = '<div class="fade">' + VIEWS[view]() + '</div>';
+  window.scrollTo(0, 0);
+  if (AFTER[view]) AFTER[view]();
+}
+function back() { stack.pop(); go(stack.pop() || 'home'); }
+function home() { stack = []; S.picked = []; S.sel = []; S.q = ''; go('home'); }
+
+function topbar(withBack) {
+  return '<div class="top">' +
+    (withBack ? '<button class="icon-btn" onclick="back()" aria-label="뒤로">' + I.back + '</button>'
+              : '<div class="brand">' + logo(30) + '<span>바탕 대여함</span></div>') +
+    '<span></span></div>';
+}
+
+var VIEWS = {
+  home: function () {
+    return topbar(false) +
+      '<h1 class="title" style="margin-top:28px">무엇을 할까요?</h1>' +
+      '<div class="stack" style="margin-top:24px">' +
+      '<button class="big" onclick="startBorrow()"><span class="ico p">' + I.book + '</span><div class="grow"><b>빌리기</b><span>전공서적 · 복지물품</span></div>' + I.chev + '</button>' +
+      '<button class="big" onclick="go(\'who\')"><span class="ico m">' + I.ret + '</span><div class="grow"><b>반납하기</b><span>제자리에 돌려놓은 뒤</span></div>' + I.chev + '</button>' +
+      '</div>' +
+      '<div id="myBox"></div>' +
+      '<p class="foot" id="homeFoot">' + esc(ORG) + '</p>';
+  },
+
+  pick: function () {
+    return topbar(true) +
+      '<h1 class="title">무엇을 빌릴까요?</h1>' +
+      '<div class="seg" role="tablist" id="seg"></div>' +
+      '<label class="search">' + I.search + '<input id="q" type="search" placeholder="이름이나 번호로 찾기" autocomplete="off" value="' + esc(S.q) + '"></label>' +
+      '<div class="list" id="items"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>' +
+      '<div class="bottom"><div class="in"><button class="btn primary" id="pickBtn" disabled onclick="go(\'form\')">골라 주세요</button></div></div>';
+  },
+
+  form: function () {
+    var m = S.me;
+    var names = pickedItems().map(function (it) { return it.name; });
+    return topbar(true) +
+      '<h1 class="title">누가 빌리나요?</h1>' +
+      '<p class="lead">' + esc(names.length > 1 ? names[0] + ' 외 ' + (names.length - 1) + '개' : names[0] || '') + '</p>' +
+      '<label class="field"><span>학번</span><input id="f_id" inputmode="numeric" maxlength="10" placeholder="20261234" value="' + esc(m.studentId) + '"></label>' +
+      '<label class="field"><span>이름</span><input id="f_name" autocomplete="name" placeholder="김바탕" value="' + esc(m.name) + '"></label>' +
+      '<label class="field"><span>전화번호</span><input id="f_phone" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" value="' + esc(m.phone) + '"></label>' +
+      '<label class="field"><span>이메일 · 반납 안내를 받아요</span><input id="f_email" type="email" inputmode="email" autocomplete="email" placeholder="name@kookmin.ac.kr" value="' + esc(m.email) + '"></label>' +
+      '<button class="agree" id="agree" onclick="toggleAgree()"><span class="check">' + I.check + '</span><div><b>개인정보 수집·이용 동의 (필수)</b>' +
+      '<small>학번·이름·전화번호·이메일을 대여 관리와 반납 안내에만 쓰고, 반납 후 학기가 끝나면 지워요.</small></div></button>' +
+      '<div class="bottom"><div class="in"><button class="btn primary" id="rentBtn" onclick="submitRent(this)">빌리기</button></div></div>';
+  },
+
+  rented: function () {
+    var r = S.result;
+    return '<div class="done">' +
+      '<div class="mark">' + I.check + '</div>' +
+      '<h1 class="title" style="margin-top:24px">빌렸어요</h1>' +
+      '<p class="lead" style="margin:0">반납 기한</p>' +
+      '<div class="due">' + esc(r.due) + '</div></div>' +
+      '<div class="card" style="margin-top:28px">' +
+      r.items.map(function (it) {
+        return '<div class="row" style="padding:6px 0"><span class="num">' + esc(it.id) + '</span><span class="grow nm">' + esc(it.name) + '</span></div>';
+      }).join('') + '</div>' +
+      '<p class="foot" style="margin-top:16px">물품에 적힌 번호가 맞는지 확인해 주세요' + (r.location ? '<br>반납은 ' + esc(r.location) + '에' : '') + '</p>' +
+      '<div class="bottom"><div class="in"><button class="btn primary" onclick="home()">확인</button></div></div>';
+  },
+
+  who: function () {
+    var m = S.me;
+    return topbar(true) +
+      '<h1 class="title">누구의 물품인가요?</h1>' +
+      '<p class="lead">빌릴 때 쓴 학번과 이름</p>' +
+      '<label class="field"><span>학번</span><input id="w_id" inputmode="numeric" maxlength="10" placeholder="20261234" value="' + esc(m.studentId) + '"></label>' +
+      '<label class="field"><span>이름</span><input id="w_name" placeholder="김바탕" value="' + esc(m.name) + '"></label>' +
+      '<div class="bottom"><div class="in"><button class="btn primary" onclick="loadMine(this)">다음</button></div></div>';
+  },
+
+  mine: function () {
+    var open = S.mine.filter(function (r) { return r.status === '대여중'; });
+    var waiting = S.mine.filter(function (r) { return r.status !== '대여중'; });
+    var html = topbar(true);
+    if (!S.mine.length) {
+      return html + '<div class="done"><div style="opacity:.9">' + logo(72) + '</div>' +
+        '<h1 class="title" style="margin-top:20px">빌린 물품이 없어요</h1></div>' +
+        '<div class="bottom"><div class="in"><button class="btn soft" onclick="home()">처음으로</button></div></div>';
+    }
+    html += '<h1 class="title">무엇을 돌려놓았나요?</h1>' +
+      '<p class="lead">' + esc(S.cat && S.cat.location ? S.cat.location + '에 두고 골라 주세요' : '제자리에 두고 골라 주세요') + '</p>';
+    if (open.length) {
+      html += '<div class="list">' + open.map(function (r) {
+        var on = S.sel.indexOf(r.rid) >= 0;
+        var chip = r.overdue ? '<span class="chip bad">' + r.daysLate + '일 지남</span>' : '<span class="chip mute">' + esc(r.due) + '까지</span>';
+        return '<button class="item' + (on ? ' on' : '') + '" onclick="toggleSel(\'' + esc(r.rid) + '\', this)"><span class="num">' + esc(r.itemId) + '</span>' +
+          '<div class="grow"><div class="nm">' + esc(r.itemName) + '</div><div class="ds">' + chip + '</div></div><span class="check">' + I.check + '</span></button>';
+      }).join('') + '</div>';
+    }
+    if (waiting.length) {
+      html += '<div class="h2">확인 중</div><div class="list">' + waiting.map(function (r) {
+        return '<div class="item" disabled><span class="num">' + esc(r.itemId) + '</span><div class="grow"><div class="nm">' + esc(r.itemName) + '</div></div><span class="chip warn">확인 중</span></div>';
+      }).join('') + '</div>';
+    }
+    if (open.length) {
+      html += '<div class="bottom"><div class="in"><button class="btn primary" id="retBtn" ' + (S.sel.length ? '' : 'disabled') +
+        ' onclick="submitReturn(this)">' + (S.sel.length ? '제자리에 돌려놓았어요' : '골라 주세요') + '</button></div></div>';
+    } else {
+      html += '<div class="bottom"><div class="in"><button class="btn soft" onclick="home()">처음으로</button></div></div>';
+    }
+    return html;
+  },
+
+  returned: function () {
+    return '<div class="done">' +
+      '<div class="mark">' + I.check + '</div>' +
+      '<h1 class="title" style="margin-top:24px">반납했어요</h1>' +
+      '<p class="lead">학생회가 확인하면 메일로 알려 드려요</p></div>' +
+      '<div class="bottom"><div class="in"><button class="btn primary" onclick="home()">확인</button></div></div>';
+  }
+};
+
+var AFTER = {
+  home: function () {
+    loadCatalog().then(function (c) {
+      var f = $('#homeFoot'); if (f) f.innerHTML = esc(c.location ? c.location + ' · ' : '') + c.days + '일 대여 · ' + esc(ORG);
+    }).catch(function () { });
+    if (S.me.studentId && S.me.name) {
+      call('mine', { studentId: S.me.studentId, name: S.me.name }).then(function (list) {
+        var box = $('#myBox'); if (!box || !list.length) return;
+        S.mine = list;
+        var late = list.filter(function (r) { return r.overdue; }).length;
+        var first = list.filter(function (r) { return r.status === '대여중'; })[0];
+        box.innerHTML = '<div class="h2">' + esc(S.me.name) + '님이 빌린 물품</div>' +
+          '<button class="big" style="padding:18px 20px" onclick="openMine()"><div class="grow"><b style="font-size:17px">' + list.length + '개</b>' +
+          '<span>' + (late ? '반납 기한이 지났어요' : first ? esc(first.due) + '까지' : '반납 확인 중') + '</span></div>' +
+          (late ? '<span class="chip bad">연체</span>' : '') + I.chev + '</button>';
+      }).catch(function () { });
+    }
+  },
+  pick: function () {
+    var q = $('#q');
+    q.addEventListener('input', function () { S.q = q.value; renderItems(); });
+    loadCatalog(true).then(function () { renderSeg(); renderItems(); }).catch(function (e) { $('#items').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  },
+  form: function () { if (S.me.agree) $('#agree').classList.add('on'); }
+};
+
+/* ── 빌리기 ── */
+function loadCatalog(force) {
+  if (S.cat && !force) return Promise.resolve(S.cat);
+  return call('catalog').then(function (c) {
+    S.cat = c;
+    if (c.orgName && c.orgName !== ORG) { ORG = c.orgName; store.set('org', ORG); }
+    return c;
+  });
+}
+function startBorrow() { S.picked = []; go('pick'); }
+function pickedItems() {
+  if (!S.cat) return [];
+  return S.picked.map(function (id) { return S.cat.items.filter(function (it) { return it.id === id; })[0]; }).filter(Boolean);
+}
+function renderSeg() {
+  var seg = $('#seg'); if (!seg) return;
+  seg.innerHTML = ['전공서적', '복지물품'].map(function (t) {
+    var n = S.cat.items.filter(function (it) { return it.type === t && it.available; }).length;
+    return '<button role="tab" class="' + (S.tab === t ? 'on' : '') + '" onclick="setTab(\'' + t + '\')">' + t + ' ' + n + '</button>';
+  }).join('');
+}
+function setTab(t) { S.tab = t; renderSeg(); renderItems(); }
+function renderItems() {
+  var box = $('#items'); if (!box || !S.cat) return;
+  var q = S.q.trim().toLowerCase().replace(/\s/g, '');
+  var list = S.cat.items.filter(function (it) {
+    if (q) return (it.name + it.id + it.desc).toLowerCase().replace(/\s/g, '').indexOf(q) >= 0;
+    return it.type === S.tab;
+  });
+  list.sort(function (a, b) { return (b.available - a.available) || a.id.localeCompare(b.id); });
+  if (!list.length) { box.innerHTML = '<div class="empty">' + (q ? '찾는 물품이 없어요' : '아직 등록된 물품이 없어요') + '</div>'; }
+  else box.innerHTML = list.map(function (it) {
+    var on = S.picked.indexOf(it.id) >= 0;
+    var sub = it.available ? esc(it.desc) : (it.due ? esc(it.due) + ' 반납 예정' : '대여 중');
+    return '<button class="item' + (on ? ' on' : '') + '" ' + (it.available ? '' : 'disabled') + ' onclick="togglePick(\'' + esc(it.id) + '\')">' +
+      '<span class="num">' + esc(it.id) + '</span><div class="grow"><div class="nm">' + esc(it.name) + '</div>' +
+      (sub ? '<div class="ds">' + sub + '</div>' : '') + '</div>' +
+      (it.available ? '<span class="check">' + I.check + '</span>' : '<span class="chip mute">대여 중</span>') + '</button>';
+  }).join('');
+  var btn = $('#pickBtn');
+  btn.disabled = !S.picked.length;
+  btn.textContent = S.picked.length ? S.picked.length + '개 빌리기' : '골라 주세요';
+}
+function togglePick(id) {
+  var i = S.picked.indexOf(id);
+  if (i >= 0) S.picked.splice(i, 1);
+  else {
+    var max = (S.cat && S.cat.maxPerPerson) || 3;
+    if (S.picked.length >= max) { toast('한 번에 ' + max + '개까지 빌릴 수 있어요'); return; }
+    S.picked.push(id);
+  }
+  renderItems();
+}
+function toggleAgree() { $('#agree').classList.toggle('on'); }
+
+function readForm() {
+  return {
+    studentId: $('#f_id').value.trim(), name: $('#f_name').value.trim(),
+    phone: $('#f_phone').value.trim(), email: $('#f_email').value.trim(),
+    agree: $('#agree').classList.contains('on')
+  };
+}
+function submitRent(btn) {
+  var f = readForm();
+  if (!/^\d{8,10}$/.test(f.studentId.replace(/\D/g, ''))) return toast('학번을 확인해 주세요'), $('#f_id').focus();
+  if (f.name.length < 2) return toast('이름을 확인해 주세요'), $('#f_name').focus();
+  if (!/^01\d{8,9}$/.test(f.phone.replace(/\D/g, ''))) return toast('전화번호를 확인해 주세요'), $('#f_phone').focus();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return toast('이메일을 확인해 주세요'), $('#f_email').focus();
+  if (!f.agree) return toast('개인정보 동의가 필요해요');
+  busy(btn, true);
+  call('rent', { studentId: f.studentId, name: f.name, phone: f.phone, email: f.email, agree: true, itemIds: S.picked })
+    .then(function (r) {
+      S.me = { studentId: f.studentId, name: f.name, phone: f.phone, email: f.email, agree: true };
+      store.set('me', S.me);
+      S.result = r; S.picked = []; S.cat = null;
+      stack = []; go('rented');
+    })
+    .catch(function (e) { busy(btn, false); toast(e.message); });
+}
+
+/* ── 반납하기 ── */
+function loadMine(btn) {
+  var id = $('#w_id').value.trim(), name = $('#w_name').value.trim();
+  if (!/^\d{8,10}$/.test(id.replace(/\D/g, ''))) return toast('학번을 확인해 주세요');
+  if (name.length < 2) return toast('이름을 확인해 주세요');
+  busy(btn, true);
+  Promise.all([call('mine', { studentId: id, name: name }), loadCatalog().catch(function () { return null; })])
+    .then(function (res) {
+      S.me.studentId = id; S.me.name = name; store.set('me', S.me);
+      S.mine = res[0]; S.sel = [];
+      var open = S.mine.filter(function (r) { return r.status === '대여중'; });
+      if (open.length === 1) S.sel = [open[0].rid];
+      go('mine');
+    })
+    .catch(function (e) { busy(btn, false); toast(e.message); });
+}
+function openMine() {
+  S.sel = [];
+  var open = S.mine.filter(function (r) { return r.status === '대여중'; });
+  if (open.length === 1) S.sel = [open[0].rid];
+  go('mine');
+}
+function toggleSel(rid, el) {
+  var i = S.sel.indexOf(rid);
+  if (i >= 0) S.sel.splice(i, 1); else S.sel.push(rid);
+  el.classList.toggle('on', S.sel.indexOf(rid) >= 0);
+  var b = $('#retBtn');
+  b.disabled = !S.sel.length;
+  b.textContent = S.sel.length ? '제자리에 돌려놓았어요' : '골라 주세요';
+}
+function submitReturn(btn) {
+  busy(btn, true);
+  call('requestReturn', { studentId: S.me.studentId, name: S.me.name, rentalIds: S.sel })
+    .then(function () { S.sel = []; S.cat = null; stack = []; go('returned'); })
+    .catch(function (e) { busy(btn, false); toast(e.message); });
+}
+
+go('home');
+</script>
+</body>
+</html>

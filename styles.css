@@ -1,0 +1,163 @@
+/* 바탕 대여함 공통 디자인 */
+:root{
+  --bg:#F4EFE6; --card:#FFFFFF; --card2:#FAF7F1; --ink:#2B2B2B; --sub:#7A7368; --faint:#A79F92;
+  --line:#ECE5D9; --point:#C8553D; --point-press:#AE4631; --point-soft:#FAE9E3; --mid:#A08C72; --ground:#EDE2D0;
+  --good:#2F8A5B; --good-soft:#E3F2E9; --warn:#C9701E; --warn-soft:#FBEEDD; --bad:#C8553D;
+  --sh1:0 1px 2px rgba(43,43,43,.05),0 6px 20px rgba(60,45,30,.07);
+  --sh2:0 2px 4px rgba(43,43,43,.06),0 14px 32px rgba(60,45,30,.12);
+  --shp:0 6px 18px rgba(200,85,61,.32);
+  --r:20px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171513; --card:#24211E; --card2:#1D1B19; --ink:#F2EDE6; --sub:#B0A89C; --faint:#7D766C;
+    --line:#332F2B; --point:#DA6A50; --point-press:#C55A42; --point-soft:#3A2520; --mid:#B39F84; --ground:#2E2924;
+    --good:#5BBE8A; --good-soft:#1F3328; --warn:#E39A4F; --warn-soft:#3A2C1C;
+    --sh1:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); --sh2:0 2px 4px rgba(0,0,0,.35),0 14px 32px rgba(0,0,0,.35);
+    --shp:0 6px 18px rgba(218,106,80,.25); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171513; --card:#24211E; --card2:#1D1B19; --ink:#F2EDE6; --sub:#B0A89C; --faint:#7D766C;
+  --line:#332F2B; --point:#DA6A50; --point-press:#C55A42; --point-soft:#3A2520; --mid:#B39F84; --ground:#2E2924;
+  --good:#5BBE8A; --good-soft:#1F3328; --warn:#E39A4F; --warn-soft:#3A2C1C;
+  --sh1:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25); --sh2:0 2px 4px rgba(0,0,0,.35),0 14px 32px rgba(0,0,0,.35);
+  --shp:0 6px 18px rgba(218,106,80,.25); color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px;line-height:1.5;letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;min-height:100vh}
+button,input{font:inherit;color:inherit;letter-spacing:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:120px;
+  padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.app.wide{max-width:760px}
+
+/* 상단 */
+.top{display:flex;align-items:center;justify-content:space-between;height:60px;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px}
+.brand svg{display:block}
+.icon-btn{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;color:var(--ink)}
+.icon-btn:active{background:var(--line)}
+.icon-btn svg{width:24px;height:24px}
+
+/* 제목 */
+.title{font-size:26px;line-height:1.35;font-weight:700;letter-spacing:-0.02em;margin:20px 0 6px}
+.lead{color:var(--sub);font-size:15px;margin:0 0 20px}
+.h2{font-size:15px;font-weight:600;color:var(--sub);margin:24px 4px 10px}
+
+/* 카드 */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh1);padding:20px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+
+/* 큰 선택 카드 (홈) */
+.big{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:var(--card);border-radius:24px;
+  box-shadow:var(--sh2);padding:24px 22px;transition:transform .12s ease, box-shadow .12s ease}
+.big:active{transform:scale(.98);box-shadow:var(--sh1)}
+.big .ico{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;flex:none}
+.big .ico svg{width:30px;height:30px}
+.big b{display:block;font-size:20px;font-weight:700}
+.big span{display:block;color:var(--sub);font-size:14px;margin-top:2px}
+.big .chev{color:var(--faint);width:22px;height:22px;flex:none}
+.ico.p{background:var(--point-soft);color:var(--point)}
+.ico.m{background:var(--ground);color:var(--ink)}
+
+/* 버튼 */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:56px;border-radius:16px;
+  font-size:17px;font-weight:600;transition:transform .12s ease, box-shadow .12s ease, background .12s}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--point);color:#fff;box-shadow:var(--shp)}
+.btn.primary:active{background:var(--point-press);box-shadow:none}
+.btn.soft{background:var(--card);color:var(--ink);box-shadow:var(--sh1)}
+.btn.ghost{background:transparent;color:var(--sub);height:48px;font-size:15px}
+.btn[disabled]{background:var(--line)!important;color:var(--faint)!important;box-shadow:none!important;transform:none;cursor:default}
+.btn.sm{height:40px;width:auto;padding:0 16px;font-size:15px;border-radius:12px}
+.btn.loading{pointer-events:none;opacity:.85}
+.btn.loading::after{content:"";width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(16px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.bottom .in{max-width:440px;margin:0 auto}
+
+/* 탭(세그먼트) */
+.seg{display:flex;background:var(--line);border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;height:40px;border-radius:11px;font-size:15px;font-weight:600;color:var(--sub)}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:var(--sh1)}
+
+/* 검색 */
+.search{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:14px;box-shadow:var(--sh1);padding:0 14px;height:48px;margin-top:12px}
+.search svg{width:20px;height:20px;color:var(--faint);flex:none}
+.search input{border:0;outline:0;background:transparent;flex:1;font-size:16px;min-width:0}
+.search input::placeholder{color:var(--faint)}
+
+/* 물품 목록 */
+.list{background:var(--card);border-radius:var(--r);box-shadow:var(--sh1);overflow:hidden;margin-top:12px}
+.item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px 18px;min-height:72px}
+.item+.item{border-top:1px solid var(--line)}
+.item:active:not([disabled]){background:var(--card2)}
+.item[disabled]{cursor:default}
+.item[disabled] .nm{color:var(--faint)}
+.num{flex:none;min-width:58px;height:30px;padding:0 8px;border-radius:9px;background:var(--ground);display:grid;place-items:center;
+  font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0}
+.item[disabled] .num{opacity:.5}
+.nm{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.check{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;transition:all .12s}
+.check svg{width:16px;height:16px;color:#fff;opacity:0}
+.item.on .check{background:var(--point);border-color:var(--point)}
+.item.on .check svg{opacity:1}
+.empty{padding:36px 20px;text-align:center;color:var(--sub);font-size:15px}
+
+/* 칩 */
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;flex:none}
+.chip.ok{background:var(--good-soft);color:var(--good)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--point-soft);color:var(--point)}
+.chip.mute{background:var(--line);color:var(--sub)}
+
+/* 입력 */
+.field{display:block;margin-bottom:14px}
+.field span{display:block;font-size:14px;color:var(--sub);margin:0 4px 6px}
+.field input{width:100%;height:56px;border-radius:14px;border:0;background:var(--card);box-shadow:var(--sh1);padding:0 16px;font-size:17px;outline:0;
+  transition:box-shadow .12s}
+.field input:focus{box-shadow:0 0 0 2px var(--point),var(--sh1)}
+.field input::placeholder{color:var(--faint)}
+.agree{display:flex;align-items:flex-start;gap:12px;padding:16px;background:var(--card);border-radius:16px;box-shadow:var(--sh1);width:100%;text-align:left}
+.agree .check{margin-top:1px}
+.agree.on .check{background:var(--point);border-color:var(--point)}
+.agree.on .check svg{opacity:1}
+.agree b{font-size:15px;font-weight:600;display:block}
+.agree small{display:block;color:var(--sub);font-size:13px;margin-top:4px;line-height:1.5}
+
+/* 완료 */
+.done{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:48px}
+.done .mark{width:76px;height:76px;border-radius:50%;background:var(--point);display:grid;place-items:center;box-shadow:var(--shp);animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+.done .mark svg{width:40px;height:40px;color:#fff}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.due{font-size:30px;font-weight:800;letter-spacing:-0.02em;color:var(--point);margin:4px 0}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:15px;padding:6px 0}
+.kv span{color:var(--sub)}
+.kv b{font-weight:600;text-align:right}
+
+/* 토스트 */
+#toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  background:#2B2B2B;color:#fff;padding:13px 18px;border-radius:14px;font-size:15px;max-width:calc(100% - 40px);width:max-content;
+  box-shadow:0 8px 24px rgba(0,0,0,.2);transition:all .25s ease;z-index:50;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+.foot{color:var(--faint);font-size:13px;text-align:center;margin-top:28px}
+.fade{animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.skel{height:72px;background:linear-gradient(90deg,var(--card) 0,var(--card2) 50%,var(--card) 100%);background-size:200% 100%;animation:sk 1.2s infinite}
+.skel+.skel{border-top:1px solid var(--line)}
+@keyframes sk{to{background-position:-200% 0}}
+.hide{display:none!important}
+.overlay{position:fixed;inset:0;background:rgba(20,18,16,.55);display:grid;place-items:center;padding:20px;z-index:40;animation:fade .18s ease}
+.sheet{background:var(--card);border-radius:24px;box-shadow:var(--sh2);width:100%;max-width:420px;padding:22px;max-height:calc(100vh - 40px);overflow:auto}
+:focus-visible{outline:2px solid var(--point);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+a{color:var(--point)}
